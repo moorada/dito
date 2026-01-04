@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Multi-Touch Assignment</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    body{
+      overflow:hidden;
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
+      background:linear-gradient(135deg,#000 0%,#0a0a0a 50%,#000 100%);
+      position:relative; width:100vw; height:100vh;
+    }
+    .background-overlay{
+      position:absolute; inset:0;
+      background:
+        radial-gradient(circle at 20% 80%, rgba(0,255,255,0.05), transparent 40%),
+        radial-gradient(circle at 80% 20%, rgba(255,0,255,0.05), transparent 40%),
+        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,255,0.03) 2px, rgba(0,255,255,0.03) 4px);
+      pointer-events:none;
+    }
+    #canvas{ position:absolute; top:0; left:0; touch-action:none; }
+
+    .header{
+      position:absolute; top:32px; left:50%; transform:translateX(-50%);
+      text-align:center; z-index:10; pointer-events:none;
+      transition:opacity .2s ease;
+    }
+    .header.hidden-ui{ opacity:0; }
+    .header h1{
+      font-size:28px; font-weight:bold; color:#00ffff; margin-bottom:8px;
+      text-shadow:0 0 10px rgba(0,255,255,0.8), 0 0 20px rgba(0,255,255,0.6), 0 4px 6px rgba(0,0,0,0.3);
+      letter-spacing:2px;
+    }
+    .header p{ font-size:12px; color:#00ffff; opacity:.7; letter-spacing:1px; }
+
+    .countdown{
+      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+      z-index:10; pointer-events:none;
+    }
+    .countdown-number{
+      font-size:144px; font-weight:bold; color:#00ffff;
+      text-shadow:0 0 20px rgba(0,255,255,1), 0 0 40px rgba(0,255,255,0.8), 0 10px 25px rgba(0,0,0,0.5);
+      animation:pulse 1s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:.8; transform:scale(1.05);} }
+
+    .footer{
+      position:absolute; bottom:80px; left:50%; transform:translateX(-50%);
+      z-index:10; pointer-events:none;
+    }
+    .footer-box{
+      background:rgba(0,0,0,0.8); backdrop-filter:blur(10px);
+      padding:12px 24px; border-radius:9999px;
+      border:1px solid rgba(0,255,255,0.5);
+      box-shadow:0 0 10px rgba(0,255,255,0.3), inset 0 0 10px rgba(0,255,255,0.1);
+    }
+    .footer-text{ font-size:14px; color:#00ffff; opacity:.8; }
+    .footer-count{ color:#00ffff; font-weight:bold; text-shadow:0 0 10px rgba(0,255,255,0.8); }
+
+    .settings-overlay{
+      position:fixed; inset:0; background:rgba(0,0,0,0.6);
+      z-index:19; opacity:0; pointer-events:none; transition:opacity .3s;
+    }
+    .settings-overlay.active{ opacity:1; pointer-events:auto; }
+
+    .settings-panel{
+      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(.9);
+      background:rgba(0,0,0,0.95); backdrop-filter:blur(20px);
+      border-radius:24px; padding:32px;
+      border:2px solid rgba(0,255,255,0.6);
+      box-shadow:0 0 20px rgba(0,255,255,0.4), inset 0 0 30px rgba(0,255,255,0.05);
+      z-index:20; min-width:320px; max-width:90vw;
+      opacity:0; pointer-events:none; transition:all .3s;
+    }
+    .settings-panel.active{ opacity:1; pointer-events:auto; transform:translate(-50%,-50%) scale(1); }
+
+    .settings-toggle{
+      position:absolute; top:20px; right:20px;
+      background:linear-gradient(135deg,#00ffff 0%, #0099cc 100%);
+      border:2px solid rgba(0,255,255,0.85);
+      border-radius:14px; width:58px; height:58px;
+      cursor:pointer; z-index:21; pointer-events:auto;
+      box-shadow:0 0 22px rgba(0,255,255,0.55), 0 6px 16px rgba(0,0,0,0.35), inset 0 0 18px rgba(0,255,255,0.18);
+      transition:transform .2s ease, opacity .2s ease, filter .2s ease;
+      display:grid; place-items:center; padding:0;
+    }
+    .settings-toggle:hover{ filter:brightness(1.05); }
+    .settings-toggle:active{ transform:scale(.95); }
+    .settings-toggle.hidden-ui{ opacity:0; pointer-events:none; }
+    .settings-toggle svg{ width:30px; height:30px; display:block; filter:drop-shadow(0 0 10px rgba(0,255,255,0.65)); }
+
+    .settings-title{
+      color:#00ffff; margin-bottom:24px; font-size:24px; font-weight:bold;
+      text-shadow:0 0 10px rgba(0,255,255,0.8); letter-spacing:2px;
+    }
+    .mode-button{
+      width:100%; padding:16px; margin:8px 0;
+      background:rgba(0,255,255,0.1);
+      border:2px solid rgba(0,255,255,0.4);
+      border-radius:12px; color:#00ffff;
+      font-size:16px; cursor:pointer; transition:all .2s; font-weight:500;
+    }
+    .mode-button.active{
+      background:linear-gradient(135deg, rgba(0,255,255,0.3) 0%, rgba(0,150,200,0.3) 100%);
+      border-color:#00ffff;
+      box-shadow:0 0 20px rgba(0,255,255,0.6), inset 0 0 20px rgba(0,255,255,0.2);
+      color:#fff;
+    }
+    .mode-button:active{ transform:scale(.98); }
+
+    .settings-section{ margin-top:24px; padding-top:24px; border-top:1px solid rgba(0,255,255,0.3); }
+    .settings-label{ color:#00ffff; font-size:14px; margin-bottom:12px; font-weight:500; opacity:.8; }
+
+    .number-selector{ display:flex; align-items:center; justify-content:center; gap:16px; }
+    .number-btn{
+      background:rgba(0,255,255,0.2);
+      border:2px solid rgba(0,255,255,0.5);
+      border-radius:50%; width:48px; height:48px;
+      color:#00ffff; font-size:24px; cursor:pointer; transition:all .2s;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .number-btn:active{
+      transform:scale(.9);
+      background:rgba(0,255,255,0.4);
+      box-shadow:0 0 15px rgba(0,255,255,0.6);
+    }
+    .number-display{
+      background:rgba(0,0,0,0.6);
+      border:2px solid rgba(0,255,255,0.5);
+      border-radius:12px;
+      padding:12px 32px;
+      color:#00ffff;
+      font-size:32px;
+      font-weight:bold;
+      min-width:80px;
+      text-align:center;
+      box-shadow:0 0 15px rgba(0,255,255,0.3), inset 0 0 15px rgba(0,255,255,0.1);
+    }
+    .hidden{ display:none !important; }
+  </style>
+</head>
+<body>
+  <div class="background-overlay"></div>
+  <canvas id="canvas"></canvas>
+
+  <div class="settings-overlay" id="settingsOverlay"></div>
+
+  <button class="settings-toggle" id="settingsToggle" aria-label="Settings">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M6 6 H18" fill="none" stroke="rgba(0,0,0,0.85)" stroke-linecap="round" stroke-width="2"/>
+      <path d="M6 12 H18" fill="none" stroke="rgba(0,0,0,0.85)" stroke-linecap="round" stroke-width="2"/>
+      <path d="M6 18 H18" fill="none" stroke="rgba(0,0,0,0.85)" stroke-linecap="round" stroke-width="2"/>
+      <circle cx="9" cy="6" r="2.2" fill="#00ffff"/>
+      <circle cx="14.5" cy="12" r="2.2" fill="#00ffff"/>
+      <circle cx="11" cy="18" r="2.2" fill="#00ffff"/>
+    </svg>
+  </button>
+
+  <div class="settings-panel" id="settingsPanel">
+    <h3 class="settings-title">Mode Selection</h3>
+
+    <button class="mode-button active" data-mode="random">Random Selection</button>
+    <button class="mode-button" data-mode="teams">Teams</button>
+    <button class="mode-button" data-mode="numbers">Numbers</button>
+
+    <div id="teamsSettings" class="settings-section hidden">
+      <div class="settings-label">Number of Teams:</div>
+      <div class="number-selector">
+        <button class="number-btn" id="teamsDecrease">−</button>
+        <div class="number-display" id="teamsDisplay">2</div>
+        <button class="number-btn" id="teamsIncrease">+</button>
+      </div>
+    </div>
+
+    <div id="randomSettings" class="settings-section">
+      <div class="settings-label">Fingers to Select:</div>
+      <div class="number-selector">
+        <button class="number-btn" id="randomDecrease">−</button>
+        <div class="number-display" id="randomDisplay">1</div>
+        <button class="number-btn" id="randomIncrease">+</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="header" id="header">
+    <h1 id="modeTitle">Random Selection</h1>
+    <p id="modeDesc">Some fingers are randomly selected</p>
+  </div>
+
+  <div id="countdown" class="countdown" style="display:none;">
+    <div class="countdown-number" id="countdownNumber">3</div>
+  </div>
+
+  <div class="footer" id="footer">
+    <div class="footer-box">
+      <span class="footer-text">Fingers: <span class="footer-count" id="touchCount">0</span></span>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const countdownEl = document.getElementById('countdown');
+    const countdownNumberEl = document.getElementById('countdownNumber');
+    const touchCountEl = document.getElementById('touchCount');
+
+    const settingsToggle = document.getElementById('settingsToggle');
+    const settingsPanel = document.getElementById('settingsPanel');
+    const settingsOverlay = document.getElementById('settingsOverlay');
+
+    const modeTitle = document.getElementById('modeTitle');
+    const modeDesc = document.getElementById('modeDesc');
+
+    const headerEl = document.getElementById('header');
+
+    const dpr = window.devicePixelRatio || 1;
+    function resizeCanvas() {
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resizeCanvas();
+
+    let touches = {};
+    let isActive = false;
+    let startTime = null;
+    let currentMode = 'random';
+    let numTeams = 2;
+    let numSelected = 1;
+
+    const teamColors = [
+      { start: 'rgba(255, 0, 128, 0.95)', mid: 'rgba(220, 0, 100, 0.8)', end: 'rgba(180, 0, 80, 0.4)', border: 'rgba(255, 0, 128, 0.9)', glow: 'rgba(255, 0, 128, 0.6)' },
+      { start: 'rgba(0, 200, 255, 0.95)', mid: 'rgba(0, 160, 220, 0.8)', end: 'rgba(0, 120, 180, 0.4)', border: 'rgba(0, 200, 255, 0.9)', glow: 'rgba(0, 200, 255, 0.6)' },
+      { start: 'rgba(0, 255, 150, 0.95)', mid: 'rgba(0, 220, 120, 0.8)', end: 'rgba(0, 180, 90, 0.4)', border: 'rgba(0, 255, 150, 0.9)', glow: 'rgba(0, 255, 150, 0.6)' },
+      { start: 'rgba(255, 200, 0, 0.95)', mid: 'rgba(220, 170, 0, 0.8)', end: 'rgba(180, 140, 0, 0.4)', border: 'rgba(255, 200, 0, 0.9)', glow: 'rgba(255, 200, 0, 0.6)' },
+      { start: 'rgba(255, 0, 255, 0.95)', mid: 'rgba(220, 0, 220, 0.8)', end: 'rgba(180, 0, 180, 0.4)', border: 'rgba(255, 0, 255, 0.9)', glow: 'rgba(255, 0, 255, 0.6)' },
+      { start: 'rgba(150, 0, 255, 0.95)', mid: 'rgba(120, 0, 220, 0.8)', end: 'rgba(90, 0, 180, 0.4)', border: 'rgba(150, 0, 255, 0.9)', glow: 'rgba(150, 0, 255, 0.6)' },
+      { start: 'rgba(0, 255, 255, 0.95)', mid: 'rgba(0, 220, 220, 0.8)', end: 'rgba(0, 180, 180, 0.4)', border: 'rgba(0, 255, 255, 0.9)', glow: 'rgba(0, 255, 255, 0.6)' },
+      { start: 'rgba(255, 100, 0, 0.95)', mid: 'rgba(220, 80, 0, 0.8)', end: 'rgba(180, 60, 0, 0.4)', border: 'rgba(255, 100, 0, 0.9)', glow: 'rgba(255, 100, 0, 0.6)' },
+      { start: 'rgba(0, 255, 200, 0.95)', mid: 'rgba(0, 220, 170, 0.8)', end: 'rgba(0, 180, 140, 0.4)', border: 'rgba(0, 255, 200, 0.9)', glow: 'rgba(0, 255, 200, 0.6)' },
+      { start: 'rgba(200, 255, 0, 0.95)', mid: 'rgba(170, 220, 0, 0.8)', end: 'rgba(140, 180, 0, 0.4)', border: 'rgba(200, 255, 0, 0.9)', glow: 'rgba(200, 255, 0, 0.6)' },
+    ];
+
+    const colorRandomSelected = {
+      start: 'rgba(0, 255, 100, 0.95)',
+      mid: 'rgba(0, 220, 80, 0.8)',
+      end: 'rgba(0, 180, 60, 0.4)',
+      border: 'rgba(0, 255, 100, 0.9)',
+      glow: 'rgba(0, 255, 100, 0.8)'
+    };
+
+    const colorRandomNotSelected = {
+      start: 'rgba(60, 60, 80, 0.95)',
+      mid: 'rgba(40, 40, 60, 0.8)',
+      end: 'rgba(20, 20, 40, 0.4)',
+      border: 'rgba(80, 80, 100, 0.9)',
+      glow: 'rgba(60, 60, 80, 0.3)'
+    };
+
+    const colorNumbers = {
+      start: 'rgba(180, 0, 255, 0.95)',
+      mid: 'rgba(150, 0, 220, 0.8)',
+      end: 'rgba(120, 0, 180, 0.4)',
+      border: 'rgba(180, 0, 255, 0.9)',
+      glow: 'rgba(180, 0, 255, 0.8)'
+    };
+
+    const colorBase = {
+      start: 'rgba(0, 255, 255, 0.95)',
+      mid: 'rgba(0, 200, 200, 0.8)',
+      end: 'rgba(0, 150, 150, 0.4)',
+      border: 'rgba(0, 255, 255, 0.9)',
+      glow: 'rgba(0, 255, 255, 0.8)'
+    };
+
+    function setUIHidden(hidden) {
+      // Footer always visible; hide only header + settings button
+      headerEl.classList.toggle('hidden-ui', hidden);
+      settingsToggle.classList.toggle('hidden-ui', hidden);
+      if (hidden) {
+        settingsPanel.classList.remove('active');
+        settingsOverlay.classList.remove('active');
+      }
+    }
+
+    function toggleSettings() {
+      const isPanelActive = settingsPanel.classList.toggle('active');
+      settingsOverlay.classList.toggle('active', isPanelActive);
+    }
+    settingsToggle.addEventListener('click', toggleSettings);
+    settingsOverlay.addEventListener('click', toggleSettings);
+
+    document.querySelectorAll('.mode-button').forEach(button => {
+      button.addEventListener('click', () => {
+        document.querySelectorAll('.mode-button').forEach(b => b.classList.remove('active'));
+        button.classList.add('active');
+        currentMode = button.dataset.mode;
+
+        document.getElementById('teamsSettings').classList.add('hidden');
+        document.getElementById('randomSettings').classList.add('hidden');
+
+        if (currentMode === 'teams') {
+          document.getElementById('teamsSettings').classList.remove('hidden');
+          modeTitle.textContent = 'Teams';
+          modeDesc.textContent = 'Fingers are divided into teams';
+        } else if (currentMode === 'random') {
+          document.getElementById('randomSettings').classList.remove('hidden');
+          modeTitle.textContent = 'Random Selection';
+          modeDesc.textContent = 'Some fingers are randomly selected';
+        } else {
+          modeTitle.textContent = 'Number Assignment';
+          modeDesc.textContent = 'Each finger gets its number after 3 seconds';
+        }
+
+        resetAll();
+      });
+    });
+
+    document.getElementById('teamsDecrease').addEventListener('click', () => {
+      numTeams = Math.max(2, numTeams - 1);
+      document.getElementById('teamsDisplay').textContent = numTeams;
+    });
+    document.getElementById('teamsIncrease').addEventListener('click', () => {
+      numTeams = Math.min(10, numTeams + 1);
+      document.getElementById('teamsDisplay').textContent = numTeams;
+    });
+    document.getElementById('randomDecrease').addEventListener('click', () => {
+      numSelected = Math.max(1, numSelected - 1);
+      document.getElementById('randomDisplay').textContent = numSelected;
+    });
+    document.getElementById('randomIncrease').addEventListener('click', () => {
+      numSelected = Math.min(10, numSelected + 1);
+      document.getElementById('randomDisplay').textContent = numSelected;
+    });
+
+    function updateTouchCount() { touchCountEl.textContent = Object.keys(touches).length; }
+
+    function resetAll() {
+      touches = {};
+      isActive = false;
+      startTime = null;
+      countdownEl.style.display = 'none';
+      updateTouchCount();
+      setUIHidden(false);
+    }
+
+    function restartTimer() {
+      isActive = true;
+      startTime = Date.now();
+      countdownEl.style.display = 'block';
+
+      Object.keys(touches).forEach(id => {
+        touches[id].showNumber = false;
+        touches[id].team = null;
+        touches[id].selected = false;
+        touches[id].number = 0;
+        touches[id].finalColor = null;
+        touches[id].finalRing = false;
+      });
+    }
+
+    function shuffleArray(array) {
+      const shuffled = [...array];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    }
+
+    function assignResults() {
+      const touchIds = Object.keys(touches);
+
+      if (currentMode === 'numbers') {
+        const numbers = Array.from({ length: touchIds.length }, (_, i) => i + 1);
+        const shuffledNumbers = shuffleArray(numbers);
+
+        touchIds.forEach((id, index) => {
+          touches[id].number = shuffledNumbers[index];
+          touches[id].showNumber = true;
+          touches[id].finalColor = colorNumbers;
+          touches[id].finalRing = false;
+        });
+      } else if (currentMode === 'teams') {
+        const shuffledIds = shuffleArray(touchIds);
+        shuffledIds.forEach((id, index) => {
+          touches[id].team = index % numTeams;
+          touches[id].showNumber = true;
+          const c = teamColors[touches[id].team % teamColors.length];
+          touches[id].finalColor = c;
+          touches[id].finalRing = true;
+        });
+      } else if (currentMode === 'random') {
+        const shuffled = shuffleArray(touchIds);
+        const selectedCount = Math.min(numSelected, touchIds.length);
+
+        shuffled.slice(0, selectedCount).forEach(id => { touches[id].selected = true; });
+        touchIds.forEach(id => {
+          touches[id].showNumber = true;
+          touches[id].finalColor = touches[id].selected ? colorRandomSelected : colorRandomNotSelected;
+          touches[id].finalRing = touches[id].selected;
+        });
+      }
+    }
+
+    function computeDisplayPosition(mode, t) {
+      const offsetY = (mode === 'numbers') ? -80 : 0;
+      return { x: t.x, y: t.y + offsetY };
+    }
+
+    function drawPulseRing(x, y, baseColor, tSec) {
+      const pulse = 0.5 + 0.5 * Math.sin(tSec * 6.5);
+      const r = 58 + pulse * 10;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = baseColor.border.replace('0.9', String(0.25 + pulse * 0.55));
+      ctx.shadowColor = baseColor.glow;
+      ctx.shadowBlur = 30 + pulse * 10;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawBall(displayX, displayY, color) {
+      const gradient = ctx.createRadialGradient(displayX, displayY, 0, displayX, displayY, 50);
+      gradient.addColorStop(0, color.start);
+      gradient.addColorStop(0.5, color.mid);
+      gradient.addColorStop(1, color.end);
+
+      ctx.beginPath();
+      ctx.arc(displayX, displayY, 50, 0, Math.PI * 2);
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(displayX, displayY, 50, 0, Math.PI * 2);
+      ctx.strokeStyle = color.border;
+      ctx.lineWidth = 3;
+      ctx.shadowColor = color.glow;
+      ctx.shadowBlur = 20;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+
+    function drawText(displayX, displayY, text) {
+      if (!text) return;
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 36px Arial';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+      ctx.shadowBlur = 8;
+      ctx.fillText(text, displayX, displayY);
+      ctx.restore();
+    }
+
+    function handleTouchStart(e) {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      let hasNewTouch = false;
+
+      Array.from(e.touches).forEach(touch => {
+        const id = touch.identifier;
+        if (!touches[id]) {
+          touches[id] = {
+            x: touch.clientX - rect.left,
+            y: touch.clientY - rect.top,
+            number: 0,
+            ripples: [{ radius: 0, opacity: 1 }],
+            showNumber: false,
+            team: null,
+            selected: false,
+            finalColor: null,
+            finalRing: false
+          };
+          hasNewTouch = true;
+        }
+      });
+
+      setUIHidden(true);
+
+      if (hasNewTouch) restartTimer();
+      updateTouchCount();
+    }
+
+    function handleTouchMove(e) {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      Array.from(e.touches).forEach(touch => {
+        const id = touch.identifier;
+        if (touches[id]) {
+          touches[id].x = touch.clientX - rect.left;
+          touches[id].y = touch.clientY - rect.top;
+        }
+      });
+    }
+
+    function handleTouchEnd(e) {
+      e.preventDefault();
+      const remainingIds = Array.from(e.touches).map(t => t.identifier);
+
+      Object.keys(touches).forEach(id => {
+        if (!remainingIds.includes(parseInt(id))) {
+          delete touches[id]; // disappear immediately
+        }
+      });
+
+      if (Object.keys(touches).length > 0) {
+        restartTimer();
+        setUIHidden(true);
+      } else {
+        isActive = false;
+        startTime = null;
+        countdownEl.style.display = 'none';
+        touches = {};
+        setUIHidden(false);
+      }
+
+      updateTouchCount();
+    }
+
+    function handleTouchCancel(e) {
+      e.preventDefault();
+      handleTouchEnd(e);
+    }
+
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+    canvas.addEventListener('touchcancel', handleTouchCancel, { passive: false });
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (isActive && startTime) {
+        const elapsed = (Date.now() - startTime) / 1000;
+        const remaining = Math.max(0, 3 - elapsed);
+        countdownNumberEl.textContent = Math.ceil(remaining);
+
+        if (remaining === 0) {
+          assignResults();
+          isActive = false;
+          countdownEl.style.display = 'none';
+        }
+      }
+
+      Object.values(touches).forEach(touch => {
+        const { x: displayX, y: displayY } = computeDisplayPosition(currentMode, touch);
+
+        // ripples at finger point
+        touch.ripples = touch.ripples
+          .map(r => ({ radius: r.radius + 3, opacity: r.opacity - 0.02 }))
+          .filter(r => r.opacity > 0);
+
+        if (touch.ripples.length < 3 && Math.random() > 0.9) {
+          touch.ripples.push({ radius: 0, opacity: 1 });
+        }
+
+        touch.ripples.forEach(ripple => {
+          ctx.beginPath();
+          ctx.arc(touch.x, touch.y, ripple.radius, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(0, 255, 255, ${ripple.opacity * 0.8})`;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        });
+
+        // choose color:
+        // - for numbers: always purple
+        // - for random/teams: base before selection, frozen finalColor after selection
+        let color = colorBase;
+        let ring = false;
+
+        if (currentMode === 'numbers') {
+          color = colorNumbers;
+        } else {
+          if (touch.showNumber && touch.finalColor) {
+            color = touch.finalColor;
+            ring = !!touch.finalRing;
+          } else {
+            color = colorBase;
+          }
+        }
+
+        // connection line
+        ctx.beginPath();
+        ctx.moveTo(touch.x, touch.y);
+        ctx.lineTo(displayX, displayY);
+        ctx.strokeStyle = touch.showNumber ? color.border.replace('0.9', '0.4') : 'rgba(0, 255, 255, 0.4)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        drawBall(displayX, displayY, color);
+
+        if ((currentMode === 'random' || currentMode === 'teams') && ring) {
+          drawPulseRing(displayX, displayY, color, Date.now() / 1000);
+        }
+
+        // TEXT: only for Numbers mode (keep ? during countdown, show number after)
+        if (currentMode === 'numbers') {
+          const text = touch.showNumber ? String(touch.number) : (isActive ? '?' : '');
+          drawText(displayX, displayY, text);
+        }
+      });
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+    window.addEventListener('resize', resizeCanvas);
+  </script>
+</body>
+</html>
