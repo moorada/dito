@@ -1,0 +1,19 @@
+{
+  "name": "Dito - Gioco Touch Multiplayer",
+  "short_name": "Dito",
+  "description": "Gioco fingerstyle multiplayer per assegnazione casuale, team e numeri su schermi touch.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#04090f",
+  "lang": "it-IT",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

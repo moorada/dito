@@ -1,9 +1,50 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Multi-Touch Assignment</title>
+  <title>Dito | Gioco Touch Multiplayer Fingerstyle</title>
+  <meta name="description" content="Dito e un gioco touch multiplayer fingerstyle: appoggia le dita, attendi il countdown e scopri selezione casuale, team o numeri. Ottimizzato per smartphone e tablet." />
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+  <meta name="author" content="Alongale" />
+  <meta name="theme-color" content="#04090f" />
+  <meta name="format-detection" content="telephone=no" />
+  <link rel="canonical" href="https://dito.alongale.com/" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
+  <link rel="manifest" href="/site.webmanifest" />
+
+  <meta property="og:locale" content="it_IT" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Dito" />
+  <meta property="og:title" content="Dito | Gioco Touch Multiplayer Fingerstyle" />
+  <meta property="og:description" content="Gioco touch multiplayer: posa le dita sullo schermo e assegna random, team o numeri in 3 secondi." />
+  <meta property="og:url" content="https://dito.alongale.com/" />
+  <meta property="og:image" content="https://dito.alongale.com/favicon.svg" />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Dito | Gioco Touch Multiplayer Fingerstyle" />
+  <meta name="twitter:description" content="Esperienza touch multiplayer per smartphone e tablet con selezione casuale, squadre e numeri." />
+  <meta name="twitter:image" content="https://dito.alongale.com/favicon.svg" />
+
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Dito",
+      "url": "https://dito.alongale.com/",
+      "description": "Gioco touch multiplayer fingerstyle: poggia le dita sullo schermo e assegna casualmente player, team o numeri.",
+      "applicationCategory": "GameApplication",
+      "inLanguage": "it-IT",
+      "operatingSystem": "Android, iOS",
+      "browserRequirements": "Supporto touch multipoint richiesto",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR"
+      }
+    }
+  </script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
     body{
@@ -28,7 +69,7 @@
       transition:opacity .2s ease;
     }
     .header.hidden-ui{ opacity:0; }
-    .header h1{
+    .header .mode-title{
       font-size:28px; font-weight:bold; color:#00ffff; margin-bottom:8px;
       text-shadow:0 0 10px rgba(0,255,255,0.8), 0 0 20px rgba(0,255,255,0.6), 0 4px 6px rgba(0,0,0,0.3);
       letter-spacing:2px;
@@ -58,6 +99,37 @@
     }
     .footer-text{ font-size:14px; color:#00ffff; opacity:.8; }
     .footer-count{ color:#00ffff; font-weight:bold; text-shadow:0 0 10px rgba(0,255,255,0.8); }
+
+    .device-warning{
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      z-index:30; pointer-events:none;
+      background:radial-gradient(circle at center, rgba(0,0,0,0.45), rgba(0,0,0,0.82));
+    }
+    .device-warning.hidden{ display:none !important; }
+    .device-warning-box{
+      max-width:min(90vw, 520px);
+      text-align:center;
+      padding:18px 22px;
+      border-radius:16px;
+      background:rgba(0,0,0,0.88);
+      border:2px solid rgba(255, 120, 120, 0.75);
+      box-shadow:0 0 28px rgba(255, 90, 90, 0.35), inset 0 0 18px rgba(255, 60, 60, 0.2);
+    }
+    .device-warning-title{
+      font-size:18px;
+      font-weight:700;
+      color:#ffb4b4;
+      letter-spacing:.7px;
+      margin-bottom:8px;
+      text-shadow:0 0 10px rgba(255, 90, 90, 0.55);
+    }
+    .device-warning-text{
+      color:#ffdede;
+      font-size:14px;
+      line-height:1.35;
+      opacity:.95;
+    }
 
     .settings-overlay{
       position:fixed; inset:0; background:rgba(0,0,0,0.6);
@@ -138,12 +210,55 @@
       text-align:center;
       box-shadow:0 0 15px rgba(0,255,255,0.3), inset 0 0 15px rgba(0,255,255,0.1);
     }
+
+    .seo-content{
+      position:absolute;
+      width:1px;
+      height:1px;
+      margin:-1px;
+      padding:0;
+      border:0;
+      overflow:hidden;
+      clip:rect(0, 0, 0, 0);
+      white-space:nowrap;
+    }
+
+    .noscript-notice{
+      position:fixed;
+      inset:0;
+      z-index:40;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:24px;
+      color:#ffffff;
+      background:linear-gradient(135deg, #071018 0%, #000000 100%);
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
+    }
     .hidden{ display:none !important; }
   </style>
 </head>
 <body>
   <div class="background-overlay"></div>
-  <canvas id="canvas"></canvas>
+  <canvas id="canvas" aria-label="Gioco touch multiplayer Dito"></canvas>
+
+  <main class="seo-content">
+    <h1>Dito - gioco touch multiplayer fingerstyle</h1>
+    <p>
+      Dito e un gioco mobile per scegliere in modo casuale dita, creare team o assegnare numeri.
+      Ogni giocatore appoggia il dito sul display, parte un countdown di 3 secondi e il sistema mostra il risultato.
+    </p>
+    <p>
+      Funziona al meglio su smartphone e tablet con touch multipoint.
+    </p>
+  </main>
+
+  <noscript>
+    <div class="noscript-notice">
+      Per usare Dito devi attivare JavaScript e aprire la pagina da un dispositivo touch.
+    </div>
+  </noscript>
 
   <div class="settings-overlay" id="settingsOverlay"></div>
 
@@ -185,7 +300,7 @@
   </div>
 
   <div class="header" id="header">
-    <h1 id="modeTitle">Random Selection</h1>
+    <h2 id="modeTitle" class="mode-title">Random Selection</h2>
     <p id="modeDesc">Some fingers are randomly selected</p>
   </div>
 
@@ -196,6 +311,15 @@
   <div class="footer" id="footer">
     <div class="footer-box">
       <span class="footer-text">Fingers: <span class="footer-count" id="touchCount">0</span></span>
+    </div>
+  </div>
+
+  <div id="deviceWarning" class="device-warning hidden" aria-live="polite">
+    <div class="device-warning-box">
+      <div class="device-warning-title">Solo Mobile</div>
+      <div class="device-warning-text">
+        Questa esperienza funziona in modalità touch (fingerstyle). Aprila da smartphone o tablet.
+      </div>
     </div>
   </div>
 
@@ -215,6 +339,7 @@
     const modeDesc = document.getElementById('modeDesc');
 
     const headerEl = document.getElementById('header');
+    const deviceWarningEl = document.getElementById('deviceWarning');
 
     const dpr = window.devicePixelRatio || 1;
     function resizeCanvas() {
@@ -361,6 +486,7 @@
         touches[id].number = 0;
         touches[id].finalColor = null;
         touches[id].finalRing = false;
+        touches[id].selectionPulseStart = null;
       });
     }
 
@@ -399,11 +525,15 @@
         const shuffled = shuffleArray(touchIds);
         const selectedCount = Math.min(numSelected, touchIds.length);
 
-        shuffled.slice(0, selectedCount).forEach(id => { touches[id].selected = true; });
+        shuffled.slice(0, selectedCount).forEach(id => {
+          touches[id].selected = true;
+          touches[id].selectionPulseStart = Date.now();
+        });
         touchIds.forEach(id => {
           touches[id].showNumber = true;
           touches[id].finalColor = touches[id].selected ? colorRandomSelected : colorRandomNotSelected;
           touches[id].finalRing = touches[id].selected;
+          if (!touches[id].selected) touches[id].selectionPulseStart = null;
         });
       }
     }
@@ -449,6 +579,43 @@
       ctx.shadowBlur = 0;
     }
 
+    function drawRandomSelectedHalo(x, y, elapsedSec) {
+      const pulseFast = 0.5 + 0.5 * Math.sin(elapsedSec * 14);
+      const pulseSlow = 0.5 + 0.5 * Math.sin(elapsedSec * 7);
+
+      ctx.save();
+
+      ctx.beginPath();
+      ctx.arc(x, y, 66 + pulseFast * 18, 0, Math.PI * 2);
+      ctx.lineWidth = 8;
+      ctx.strokeStyle = `rgba(80, 255, 120, ${0.45 + pulseFast * 0.4})`;
+      ctx.shadowColor = 'rgba(80,255,120,0.95)';
+      ctx.shadowBlur = 36;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(x, y, 84 + pulseSlow * 22, 0, Math.PI * 2);
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = `rgba(230, 255, 235, ${0.2 + pulseSlow * 0.35})`;
+      ctx.shadowColor = 'rgba(120,255,180,0.85)';
+      ctx.shadowBlur = 24;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawSelectedBadge(x, y) {
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 44px Arial';
+      ctx.shadowColor = 'rgba(40, 255, 100, 0.85)';
+      ctx.shadowBlur = 18;
+      ctx.fillText('✓', x, y);
+      ctx.restore();
+    }
+
     function drawText(displayX, displayY, text) {
       if (!text) return;
       ctx.save();
@@ -479,7 +646,8 @@
             team: null,
             selected: false,
             finalColor: null,
-            finalRing: false
+            finalRing: false,
+            selectionPulseStart: null
           };
           hasNewTouch = true;
         }
@@ -536,6 +704,19 @@
     canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
     canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
     canvas.addEventListener('touchcancel', handleTouchCancel, { passive: false });
+
+    function hasTouchSupport() {
+      return (
+        navigator.maxTouchPoints > 0 ||
+        window.matchMedia('(pointer: coarse)').matches ||
+        'ontouchstart' in window
+      );
+    }
+
+    function updateDeviceWarning() {
+      const showWarning = !hasTouchSupport();
+      deviceWarningEl.classList.toggle('hidden', !showWarning);
+    }
 
     function animate() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -599,6 +780,12 @@
 
         drawBall(displayX, displayY, color);
 
+        if (currentMode === 'random' && touch.showNumber && touch.selected) {
+          const pulseElapsed = touch.selectionPulseStart ? (Date.now() - touch.selectionPulseStart) / 1000 : 0;
+          drawRandomSelectedHalo(displayX, displayY, pulseElapsed);
+          drawSelectedBadge(displayX, displayY);
+        }
+
         if ((currentMode === 'random' || currentMode === 'teams') && ring) {
           drawPulseRing(displayX, displayY, color, Date.now() / 1000);
         }
@@ -615,6 +802,8 @@
 
     animate();
     window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('resize', updateDeviceWarning);
+    updateDeviceWarning();
   </script>
 </body>
 </html>
